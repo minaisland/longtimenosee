@@ -1,7 +1,6 @@
 import scrapy
 import re
 import os
-from scrapy import signals
 from lodestone.items import CharacterItem
 from lodestone.spiders import BaseSpider
 
@@ -9,22 +8,16 @@ class LsdetailSpider(BaseSpider):
     name = "lsd"
     custom_settings = {
         "ITEM_PIPELINES": {
-            "lodestone.pipelines.CharacterPipeline": 300,
+            "lodestone.pipelines.LinkshellCharacterPipeline": 300,
         }
     }
 
-    @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super(LsdetailSpider, cls).from_crawler(crawler, *args, **kwargs)
-        crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
-        return spider
-
     def start_requests(self):
+        super().start_requests()
         with open("ls.txt", "rt") as f:
             urls = [url.strip() for url in f.readlines()]
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
-            break
 
     def parse(self, response):
         character_item = CharacterItem()
@@ -38,13 +31,9 @@ class LsdetailSpider(BaseSpider):
             character_item["is_owner"] = len(entry.css("div.entry__chara_info__linkshell")) > 0
             yield character_item
 
-        next_page = response.css("div.ldst__window ul.btn__pager a.btn__pager__next::attr(href)").get()
-        if next_page != "javascript:void(0);":
-            yield response.follow(next_page, callback=self.parse)
-        else:
-            print("it is not nextpage")
+        self.goto_next_page()
 
     def spider_closed(self, spider):
         if os.path.isfile("ls.txt"):
             os.remove("ls.txt")
-        spider.logger.info("Spider closed: %s", spider.name)
+        super().spider_closed(spider)

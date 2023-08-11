@@ -12,6 +12,7 @@ class LinkshellSpider(BaseSpider):
     }
 
     def start_requests(self):
+        super().start_requests()
         urls = [
             "https://jp.finalfantasyxiv.com/lodestone/linkshell/?q=&worldname=Chocobo&character_count=11-30&order=",
             "https://jp.finalfantasyxiv.com/lodestone/linkshell/?q=&worldname=Chocobo&character_count=31-50&order=",
@@ -22,14 +23,11 @@ class LinkshellSpider(BaseSpider):
 
     def parse(self, response):
         linkshell_item = LinkshellItem()
+        linkshell_item["type_string"] = "linkshell"
         for entry in response.css("div.ldst__window div.entry"):
             linkshell_item["name"] = entry.css("p.entry__name::text").get()
             linkshell_item["world"] = entry.css("p.entry__world::text").re(r"(\w+)\s+")[0]
             linkshell_item["lodestone_id"] = entry.css("a.entry__link--line::attr(href)").re(r"\d+")[0]
             yield linkshell_item
 
-        next_page = response.css("div.ldst__window ul.btn__pager a.btn__pager__next::attr(href)").get()
-        if next_page != "javascript:void(0);":
-            yield response.follow(next_page, callback=self.parse)
-        else:
-            print("it is not nextpage")
+        self.goto_next_page()

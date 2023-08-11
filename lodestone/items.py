@@ -9,6 +9,7 @@ class LinkshellItem(Item):
     name = Field()
     world = Field()
     lodestone_id = Field()
+    type_string = Field()
 
 class CharacterItem(Item):
     name = Field()
